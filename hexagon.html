@@ -1,9 +1,9 @@
-//공들의 생성위치는 육각형내부, 공의 생성된 순서대로 번호를 표시
+//공의 진행방향에 화살표로 표시를 해줘
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>육각형 내부에 번호가 붙은 공</title>
+  <title>육각형 내부에 번호와 진행방향 화살표가 있는 공</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <style>
     canvas { background: #222; }
@@ -101,16 +101,47 @@ for (let i = 0; i < ballCount; i++) {
 Render.run(render);
 Runner.run(engine);
 
-// 번호 표시: 렌더 후 canvas에 텍스트 오버레이
+// 번호와 화살표 표시: 렌더 후 canvas에 텍스트와 화살표 오버레이
 Events.on(render, 'afterRender', function() {
   const ctx = render.context;
   ctx.save();
   ctx.font = "bold 20px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#fff";
   balls.forEach(ball => {
+    // 번호 표시
+    ctx.fillStyle = "#fff";
     ctx.fillText(ball.label, ball.position.x, ball.position.y);
+
+    // 진행방향 화살표 표시
+    const v = ball.velocity;
+    const speed = Math.sqrt(v.x * v.x + v.y * v.y);
+    if (speed > 0.5) { // 너무 느릴 땐 화살표 생략
+      const arrowLength = 32;
+      const startX = ball.position.x;
+      const startY = ball.position.y;
+      const endX = startX + (v.x / speed) * arrowLength;
+      const endY = startY + (v.y / speed) * arrowLength;
+
+      // 화살표 선
+      ctx.strokeStyle = "#ff4444";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+
+      // 화살촉
+      const headlen = 10;
+      const angle = Math.atan2(endY - startY, endX - startX);
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI/6), endY - headlen * Math.sin(angle - Math.PI/6));
+      ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI/6), endY - headlen * Math.sin(angle + Math.PI/6));
+      ctx.lineTo(endX, endY);
+      ctx.fillStyle = "#ff4444";
+      ctx.fill();
+    }
   });
   ctx.restore();
 });
