@@ -1,9 +1,9 @@
-//물리적인 부분은 괜찮으나 육각형의 면들이 그룹화되어있지않은데? 육각형을 그룹화하여 중심기준회전하게
+//복합바디로 그룹화는 정상적으로 확인됨, 하지만 직선도형의 끝과끝을 이어서 육각형을 만들어야지 지금은 육각형의 꼭짓점 끝에 배치되어있음
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>중심 기준 회전하는 빈 육각형</title>
+  <title>정확히 이어지는 빈 육각형</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <style>
     canvas { background: #222; }
@@ -12,7 +12,7 @@
 <body>
 <canvas id="world"></canvas>
 <script>
-const { Engine, Render, Runner, Bodies, Body, Composite, World, Events } = Matter;
+const { Engine, Render, Runner, Bodies, Composite, World, Events } = Matter;
 
 const engine = Engine.create();
 const world = engine.world;
@@ -27,28 +27,40 @@ const render = Render.create({
   }
 });
 
-// 육각형 외곽을 6개의 벽으로 만듦 (빈 공간)
+// 육각형 파라미터
 const centerX = width / 2, centerY = height / 2;
 const hexRadius = 120;
 const wallThickness = 16;
+const numSides = 6;
+const wallLength = 2 * hexRadius * Math.sin(Math.PI / numSides); // 한 변의 길이
+
 const hexWalls = [];
-for (let i = 0; i < 6; i++) {
-  const angle = Math.PI / 3 * i;
-  const x = centerX + Math.cos(angle) * hexRadius;
-  const y = centerY + Math.sin(angle) * hexRadius;
-  // 각 벽의 중심 좌표와 각도 계산
+for (let i = 0; i < numSides; i++) {
+  // 두 꼭짓점 좌표
+  const angle1 = (2 * Math.PI / numSides) * i;
+  const angle2 = (2 * Math.PI / numSides) * ((i + 1) % numSides);
+  const x1 = centerX + Math.cos(angle1) * hexRadius;
+  const y1 = centerY + Math.sin(angle1) * hexRadius;
+  const x2 = centerX + Math.cos(angle2) * hexRadius;
+  const y2 = centerY + Math.sin(angle2) * hexRadius;
+  // 중점
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  // 각도
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+
   const wall = Bodies.rectangle(
-    x, y,
-    hexRadius * 2 * Math.sin(Math.PI / 6), // 벽 길이
-    wallThickness,
+    mx, my,
+    wallLength, wallThickness,
     {
       isStatic: true,
-      angle: angle + Math.PI / 6,
+      angle: angle,
       render: { fillStyle: '#00eaff' }
     }
   );
   hexWalls.push(wall);
 }
+
 // 복합 바디로 그룹화
 const hexagon = Composite.create();
 hexWalls.forEach(wall => Composite.add(hexagon, wall));
